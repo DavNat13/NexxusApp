@@ -1,0 +1,5 @@
+packages:
+  - database
+  - backend
+  - frontend
+  - shared

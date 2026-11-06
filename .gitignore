@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Artefactos de build
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Entorno: nunca se versiona, solo el ejemplo
+.env
+.env.*
+!.env.example
+
+# Sistema y editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
