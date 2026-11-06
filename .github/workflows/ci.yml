@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nexxus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nexxus_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: nexxus_test
+      POSTGRES_SUPERUSER: postgres
+      POSTGRES_SUPERUSER_PASSWORD: postgres
+      DATABASE_URL_MIGRATOR: postgres://migrator:ci_migrator@localhost:5432/nexxus_test
+      DATABASE_URL_AUTH: postgres://auth_service:ci_auth@localhost:5432/nexxus_test
+      DATABASE_URL_APP: postgres://app_user:ci_app@localhost:5432/nexxus_test
+      BETTER_AUTH_SECRET: ci_secret_with_at_least_32_characters
+      BETTER_AUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -C database db:bootstrap
+      - run: pnpm -C database db:migrate
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test

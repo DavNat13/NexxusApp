@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { env, superuserUrl } from '../../src/env.js'
 
 export const appSql = postgres(env.DATABASE_URL_APP, { max: 4, onnotice: () => {} })
+export const authSql = postgres(env.DATABASE_URL_AUTH, { max: 4, onnotice: () => {} })
 export const ownerSql = postgres(env.DATABASE_URL_MIGRATOR, { max: 4, onnotice: () => {} })
 export const superuserSql = postgres(superuserUrl, { max: 2, onnotice: () => {} })
 
@@ -44,6 +45,14 @@ export async function asUser<T>(
   }) as Promise<T>
 }
 
+/** TRUNCATE de auditoría: el único atajo del harness, nunca del runtime. */
+export async function truncateAudit(): Promise<void> {
+  await superuserSql.begin(async (tx) => {
+    await tx`SELECT set_config('app.maintenance', 'on', true)`
+    await tx`TRUNCATE audit.auth_event, audit.auth_attempt RESTART IDENTITY`
+  })
+}
+
 export async function closeConnections(): Promise<void> {
-  await Promise.all([appSql.end(), ownerSql.end(), superuserSql.end()])
+  await Promise.all([appSql.end(), authSql.end(), ownerSql.end(), superuserSql.end()])
 }

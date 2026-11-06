@@ -8,11 +8,16 @@
   },
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "eslint .",
     "test": "pnpm -r --if-present test",
     "db:up": "docker compose --env-file .env -f infra/docker-compose.yml up -d",
     "db:down": "docker compose --env-file .env -f infra/docker-compose.yml down",
     "db:logs": "docker compose --env-file .env -f infra/docker-compose.yml logs -f postgres",
     "db:reset": "docker compose --env-file .env -f infra/docker-compose.yml down -v && pnpm db:up"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "typescript-eslint": "^8.72.1"
   }
 }

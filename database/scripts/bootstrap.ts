@@ -50,6 +50,40 @@ try {
 
   const db = sql(env.POSTGRES_DB)
 
+  // Rol de lectura de auditoría, sin login. Se usa con SET ROLE desde migrator.
+  await sql.unsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'audit_reader') THEN
+        CREATE ROLE audit_reader NOLOGIN;
+      END IF;
+    END
+    $$;
+  `)
+  await sql.unsafe(
+    'ALTER ROLE audit_reader NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;',
+  )
+  await sql.unsafe('GRANT audit_reader TO migrator;')
+
+  // Límites por rol: un query lento o una transacción abandonada no debe
+  // tumbar la API ni retener conexiones para siempre.
+  const hardening = [
+    "ALTER ROLE migrator SET statement_timeout = '10s'",
+    "ALTER ROLE migrator SET idle_in_transaction_session_timeout = '30s'",
+    "ALTER ROLE migrator CONNECTION LIMIT 3",
+    "ALTER ROLE auth_service SET statement_timeout = '5s'",
+    "ALTER ROLE auth_service SET idle_in_transaction_session_timeout = '10s'",
+    'ALTER ROLE auth_service CONNECTION LIMIT 10',
+    "ALTER ROLE app_user SET statement_timeout = '5s'",
+    "ALTER ROLE app_user SET idle_in_transaction_session_timeout = '10s'",
+    "ALTER ROLE app_user SET lock_timeout = '3s'",
+    'ALTER ROLE app_user CONNECTION LIMIT 20',
+  ]
+
+  for (const statement of hardening) {
+    await sql.unsafe(statement)
+  }
+
   await sql`REVOKE ALL ON DATABASE ${db} FROM PUBLIC`
   await sql`GRANT CONNECT ON DATABASE ${db} TO migrator, auth_service, app_user`
   await sql`GRANT CREATE ON DATABASE ${db} TO migrator`

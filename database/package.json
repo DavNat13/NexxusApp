@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./schema": "./src/schema/index.ts",
+    "./schema/auth": "./src/schema/auth.ts",
+    "./schema/business": "./src/schema/business.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "db:bootstrap": "tsx scripts/bootstrap.ts",
