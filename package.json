@@ -9,6 +9,10 @@
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "db:up": "docker compose --env-file .env -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose --env-file .env -f infra/docker-compose.yml down",
+    "db:logs": "docker compose --env-file .env -f infra/docker-compose.yml logs -f postgres",
+    "db:reset": "docker compose --env-file .env -f infra/docker-compose.yml down -v && pnpm db:up"
   }
 }

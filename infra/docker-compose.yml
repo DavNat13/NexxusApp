@@ -1,0 +1,29 @@
+name: nexxus
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nexxus-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-nexxus_dev}
+      # Los objetos se ordenan por byte, no por locale: migraciones deterministas.
+      LANG: C
+      TZ: UTC
+    volumes:
+      - nexxus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_SUPERUSER:-postgres} -d ${POSTGRES_DB:-nexxus_dev}
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  nexxus_pgdata:

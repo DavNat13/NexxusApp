@@ -3,3 +3,9 @@ packages:
   - backend
   - frontend
   - shared
+
+# Dependencias autorizadas a ejecutar scripts de instalación.
+allowBuilds:
+  '@prisma/client': true
+  better-sqlite3: true
+  esbuild: true
