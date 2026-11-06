@@ -1,0 +1,31 @@
+import { drizzle } from 'drizzle-orm/postgres-js'
+import { buildApp } from './app.js'
+import { createAuth } from './auth/better-auth.js'
+import { config } from './config/env.js'
+import { createPools } from './db/pools.js'
+import { verifyPrivileges } from './db/verify.js'
+
+const pools = createPools(config)
+const auth = createAuth(drizzle({ client: pools.auth }), config)
+const app = buildApp({ auth, pools, config })
+
+async function shutdown(signal: string): Promise<void> {
+  app.log.info({ signal }, 'cerrando la API')
+  await app.close()
+  await pools.close()
+}
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    void shutdown(signal).then(() => process.exit(0))
+  })
+}
+
+try {
+  await verifyPrivileges(pools)
+  await app.listen({ host: config.host, port: config.port })
+} catch (error) {
+  app.log.error({ err: error }, 'no se pudo arrancar la API')
+  await pools.close()
+  process.exit(1)
+}

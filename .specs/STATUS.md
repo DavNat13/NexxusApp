@@ -2,9 +2,9 @@
 
 > Memoria de cada sesión. Se actualiza al terminar, no al empezar.
 
-**Última actualización:** 2026-11-05
+**Última actualización:** 2026-11-06
 **Fase:** 2 — Backend
-**Etapa actual:** etapa 2A cerrada; 2B es la siguiente
+**Etapa actual:** etapa 2B cerrada; 2C es la siguiente
 
 ## Hecho
 
@@ -30,31 +30,41 @@
     `idle_in_transaction_session_timeout` y `CONNECTION LIMIT`.
   - Workflow de CI con PostgreSQL 17: bootstrap, migraciones, typecheck, lint y
     tests.
+- **Etapa 2B completa — superficie autenticada:**
+  - Fastify con una sola superficie: `/trpc` más `/health`. Nada de `/api/auth/*`.
+  - Contexto de tRPC que verifica la sesión en cada petición y deriva `userId`;
+    nunca sale del input.
+  - Procedimientos `auth.register`, `auth.login`, `auth.logout`, `auth.refresh`
+    y `auth.me`.
+  - Errores traducidos a mensajes fijos: no se revela si un email existe.
+  - Allowlist de `Origin` para mutaciones y cabeceras de seguridad en todas las
+    respuestas.
+  - Logs con redacción de cookies, autorización, tokens, secretos y contraseñas.
+  - `withUser` preparado para fijar `app.user_id` por transacción.
+  - 16 tests nuevos de backend; 27 en total, contra PostgreSQL real.
 
 ## En curso
 
-- Nada. La etapa 2A está cerrada.
+- Nada. La etapa 2B está cerrada.
 
 ## Siguiente paso
 
-Etapa 2B — **superficie autenticada**:
+Etapa 2C — **JWT y endurecimiento** (ver ADR 0002):
 
-1. App Fastify con tRPC montado y manejo de errores sin filtrar detalles.
-2. Contexto de tRPC que verifica la sesión y deriva `userId`; nunca del cliente.
-3. Procedimientos `register`, `login`, `logout`, `refresh`.
-4. Logs con redacción de cookies, tokens, emails y contraseñas.
-5. Tests de integración contra PostgreSQL real.
+1. Access token EdDSA de 15 min, algoritmo fijado y `kid` validado.
+2. Refresco con el token opaco de Better Auth y rotación de sesión.
+3. Rate limit por IP y por cuenta, más `auth.login_throttle` y bloqueo temporal.
+4. Escritura de auditoría en `audit.auth_event` y `audit.auth_attempt`.
+5. Tests de firma, expiración, algoritmo `none`, token de otro usuario y bloqueo.
 
-Etapa 2C — JWT EdDSA, rotación y endurecimiento (ver ADR 0002).
-
-## Gate de la etapa 2A — cumplido
+## Gate de la etapa 2B — cumplido
 
 | Comprobación | Comando | Estado |
 |---|---|---|
 | Typecheck de todo el monorepo | `pnpm typecheck` | Verde |
 | Lint con límite de 150 líneas | `pnpm lint` | Verde |
 | Tests de base de datos (16) | `pnpm -C database test` | Verde |
-| Tests de backend (11) | `pnpm -C backend test` | Verde |
+| Tests de backend (27) | `pnpm -C backend test` | Verde |
 | Privilegios reales al arrancar | `pnpm -C backend verify` | Verde |
 
 Los tests de base de datos arrancan desde una base vacía: `db:reset`,
@@ -70,6 +80,7 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm -C backend verify
+pnpm -C backend dev   # API en http://localhost:3000
 pnpm db:reset       # borra el volumen y reconstruye
 ```
 
@@ -96,6 +107,8 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
   identificador va hasheado.
 - `decisions/0002-token-model.md` — JWT EdDSA de 15 min más refresh opaco de 14
   días, con la ventana de revocación aceptada.
+- `decisions/0003-trpc-surface.md` — superficie tRPC, cookie `httpOnly` y
+  allowlist de origen.
 
 ## Bloqueado
 
@@ -117,8 +130,8 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
 |---|---|---|
 | 0 | Documentación | Cerrada |
 | 1 | Base de datos: auth | Cerrada |
-| 2A | Backend: cimientos | **Cerrada** |
-| 2B | Backend: superficie autenticada | Siguiente |
-| 2C | Backend: JWT y endurecimiento | Pendiente |
+| 2A | Backend: cimientos | Cerrada |
+| 2B | Backend: superficie autenticada | **Cerrada** |
+| 2C | Backend: JWT y endurecimiento | Siguiente |
 | 3 | Frontend: auth | Pendiente |
 | 4 | Walking skeleton | Pendiente |
