@@ -42,7 +42,7 @@ describe('superficie HTTP', () => {
     const res = await postProcedure(
       server.app,
       'auth.login',
-      { email: 'a@example.com', password: 'lo-que-sea' },
+      { email: 'no-es-un-email', password: 'lo-que-sea' },
       { origin },
     )
 

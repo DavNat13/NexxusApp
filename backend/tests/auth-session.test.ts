@@ -10,6 +10,7 @@ import {
   postProcedure,
   type TestServer,
 } from './helpers/server.js'
+import { clearThrottle } from './helpers/throttle.js'
 
 const email = newEmail()
 const password = 'clave-segura-123'
@@ -28,6 +29,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await deleteUser(server.pools, email)
+  await clearThrottle(server.pools, [email], ['127.0.0.1', '::1', '::ffff:127.0.0.1'])
   await closeTestServer(server)
 })
 

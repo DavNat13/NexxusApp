@@ -17,15 +17,13 @@ export const middleware = t.middleware
 export const publicProcedure = t.procedure
 
 /**
- * Exige sesión verificada. El `userId` que ve el procedimiento procede de la
- * sesión, nunca del input.
+ * Exige identidad verificada: cookie de sesión o JWT firmado.
+ * El `userId` que ve el procedimiento nunca procede del input.
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.session) {
+  if (!ctx.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sesión no válida.' })
   }
 
-  return next({
-    ctx: { ...ctx, session: ctx.session, userId: ctx.session.user.id },
-  })
+  return next({ ctx: { ...ctx, userId: ctx.userId } })
 })

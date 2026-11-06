@@ -34,6 +34,10 @@
 
 ## Sin versión asignada
 
+- Rotación real del refresh token con detección de reutilización. Better Auth 1.7
+  solo renueva la expiración; ver ADR 0002.
+- Lista de revocación de access tokens para expulsar una cuenta antes de los 15
+  minutos, si el producto lo exige.
 - Exportación completa de datos en formato abierto.
 - Modo entrenador: un usuario sigue a otro.
 - Integración con wearables más allá de Health Connect.

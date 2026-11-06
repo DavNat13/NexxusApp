@@ -52,8 +52,9 @@
 Better Auth, self-hosted, con el adaptador de Drizzle sobre nuestro PostgreSQL.
 
 - Las tablas de auth (`user`, `session`, `account`, `verification`) viven en nuestra base de datos, no en un servicio externo.
-- Better Auth aporta hash de contraseñas, rotación de sesiones, verificación de email, recuperación y 2FA. No reimplementamos criptografía.
-- La API verifica la sesión en cada request; el `user_id` sale del token, nunca del cliente.
+- Better Auth aporta hash de contraseñas, gestión de sesiones, verificación de email, recuperación y 2FA. No reimplementamos criptografía.
+- La API emite un JWT de acceso EdDSA de 15 min con `jose`; el refresh es la sesión opaca de Better Auth. La API verifica la identidad en cada request; el `user_id` sale del token, nunca del cliente.
+- Better Auth 1.7 no rota el valor del refresh token, solo renueva su expiración. La rotación real está en el backlog.
 - Dos roles de base de datos, con superficies separadas:
   - `auth_service`: solo tablas de auth. Lo usan registro, login, refresh y logout.
   - `app_user`: tablas de negocio con RLS por `app.user_id`.

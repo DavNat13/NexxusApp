@@ -43,6 +43,13 @@
       "when": 1793931787359,
       "tag": "0005_audit_security",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793971202704,
+      "tag": "0006_throttle_delete",
+      "breakpoints": true
     }
   ]
 }

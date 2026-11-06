@@ -10,9 +10,11 @@ const fileEnv = loadEnv({ path: rootEnvPath, processEnv: {}, quiet: true }).pars
 
 const allowed: Record<string, string> = {}
 
+// Solo las claves de la lista blanca. En CI el entorno del job contiene
+// DATABASE_URL_MIGRATOR para los tests de base de datos; la API lo ignora.
 for (const key of ENV_KEYS) {
-  const value = fileEnv[key]
+  const value = process.env[key] ?? fileEnv[key]
   if (value !== undefined) allowed[key] = value
 }
 
-export const config = parseConfig({ ...allowed, ...process.env })
+export const config = parseConfig(allowed)

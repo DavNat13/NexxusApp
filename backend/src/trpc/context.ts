@@ -1,6 +1,12 @@
 import type { FastifyReply } from 'fastify'
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify'
 import type { Auth } from '../auth/better-auth.js'
+import type { TokenService } from '../auth/access-token.js'
+import { readBearer } from '../auth/access-token.js'
+import type { ThrottleStore } from '../auth/throttle.js'
+import type { AuditMeta } from '../audit/meta.js'
+import { auditMeta } from '../audit/meta.js'
+import type { AuditWriter } from '../audit/write.js'
 import type { Pools } from '../db/pools.js'
 import { copySetCookie } from '../http/cookies.js'
 import { toWebHeaders } from '../http/web-headers.js'
@@ -13,21 +19,27 @@ export interface AuthSession {
 export interface Deps {
   auth: Auth
   pools: Pools
+  tokens: TokenService
+  throttle: ThrottleStore
+  audit: AuditWriter
 }
 
-export interface Context {
-  auth: Auth
-  pools: Pools
+export interface Context extends Deps {
   session: AuthSession | null
   userId: string | null
+  tokenSource: 'bearer' | 'cookie' | null
   requestId: string
+  ip: string | null
+  userAgent: string | null
+  meta: AuditMeta
   headers: Headers
   reply: FastifyReply
 }
 
 /**
- * El `userId` del contexto sale siempre de la sesión verificada.
- * Lo que envíe el cliente en el input se ignora.
+ * El `userId` del contexto sale de la sesión o del JWT verificado.
+ * Un `Authorization` inválido no cae de vuelta a la cookie: deja la petición
+ * sin identidad.
  */
 export function createContextFactory(deps: Deps) {
   return async ({ req, res }: CreateFastifyContextOptions): Promise<Context> => {
@@ -42,12 +54,28 @@ export function createContextFactory(deps: Deps) {
       session = null
     }
 
+    const bearer = readBearer(req.headers.authorization)
+    let bearerUserId: string | null = null
+
+    if (bearer) {
+      try {
+        bearerUserId = (await deps.tokens.verify(bearer)).userId
+      } catch {
+        bearerUserId = null
+      }
+    }
+
+    const meta = auditMeta(req)
+
     return {
-      auth: deps.auth,
-      pools: deps.pools,
+      ...deps,
       session,
-      userId: session?.user.id ?? null,
+      userId: bearer ? bearerUserId : (session?.user.id ?? null),
+      tokenSource: bearer ? (bearerUserId ? 'bearer' : null) : (session ? 'cookie' : null),
       requestId: req.id,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      meta,
       headers,
       reply: res,
     }

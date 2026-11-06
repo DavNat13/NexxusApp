@@ -35,6 +35,12 @@ jobs:
       DATABASE_URL_APP: postgres://app_user:ci_app@localhost:5432/nexxus_test
       BETTER_AUTH_SECRET: ci_secret_with_at_least_32_characters
       BETTER_AUTH_URL: http://localhost:3000
+      TRUSTED_ORIGINS: http://localhost:8081
+      JWT_ISSUER: nexxus
+      JWT_AUDIENCE: nexxus-app
+      JWT_KID: v1
+      JWT_PRIVATE_KEY_B64: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1DNENBUUF3QlFZREsyVndCQ0lFSUo1MnVHVEFueHEvTG14cWZab3JYQ3huaXV5Rk5ZMjEzT01CTFc1a1RUVmEKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+      JWT_PUBLIC_KEY_B64: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUNvd0JRWURLMlZ3QXlFQVpPQW1tbXo2aE5YV01lSXNhYzBqK2pJTlRqKy91SU83M0pxYTBlRzcwZ1E9Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=
 
     steps:
       - uses: actions/checkout@v4

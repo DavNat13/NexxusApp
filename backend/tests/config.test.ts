@@ -1,5 +1,15 @@
+import { generateKeyPairSync } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { parseConfig } from '../src/config/schema.js'
+
+const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+
+const JWT_PRIVATE_KEY_B64 = Buffer.from(
+  privateKey.export({ type: 'pkcs8', format: 'pem' }),
+).toString('base64')
+const JWT_PUBLIC_KEY_B64 = Buffer.from(
+  publicKey.export({ type: 'spki', format: 'pem' }),
+).toString('base64')
 
 function baseEnv(): NodeJS.ProcessEnv {
   return {
@@ -7,6 +17,8 @@ function baseEnv(): NodeJS.ProcessEnv {
     DATABASE_URL_APP: 'postgres://app_user:pw@localhost:5433/nexxus_dev',
     BETTER_AUTH_SECRET: 'x'.repeat(32),
     BETTER_AUTH_URL: 'http://localhost:3000',
+    JWT_PRIVATE_KEY_B64,
+    JWT_PUBLIC_KEY_B64,
   }
 }
 
@@ -46,6 +58,22 @@ describe('configuración de la API', () => {
     const env = baseEnv()
     env.NODE_ENV = 'production'
     expect(() => parseConfig(env)).toThrow(/https/)
+  })
+
+  it('rechaza un par de claves que no coincide', () => {
+    const env = baseEnv()
+    const other = generateKeyPairSync('ed25519')
+    env.JWT_PUBLIC_KEY_B64 = Buffer.from(
+      other.publicKey.export({ type: 'spki', format: 'pem' }),
+    ).toString('base64')
+
+    expect(() => parseConfig(env)).toThrow(/par de claves inválido/)
+  })
+
+  it('rechaza una vida de access token fuera de rango', () => {
+    const env = baseEnv()
+    env.ACCESS_TOKEN_TTL_SECONDS = '10'
+    expect(() => parseConfig(env)).toThrow(/ACCESS_TOKEN_TTL_SECONDS/)
   })
 
   it('no filtra valores en el mensaje de error', () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseKeyPair } from './keys.js'
 
 const envSchema = z
   .object({
@@ -12,6 +13,12 @@ const envSchema = z
     TRUSTED_ORIGINS: z.string().default(''),
     SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(1_209_600),
     SESSION_UPDATE_AGE_SECONDS: z.coerce.number().int().positive().default(86_400),
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3_600).default(900),
+    JWT_ISSUER: z.string().min(1).default('nexxus'),
+    JWT_AUDIENCE: z.string().min(1).default('nexxus-app'),
+    JWT_KID: z.string().min(1).max(32).default('v1'),
+    JWT_PRIVATE_KEY_B64: z.string().min(1),
+    JWT_PUBLIC_KEY_B64: z.string().min(1),
   })
   .superRefine((value, ctx) => {
     const authRole = new URL(value.DATABASE_URL_AUTH).username
@@ -48,6 +55,16 @@ const envSchema = z
         message: 'debe ser https en producción',
       })
     }
+
+    try {
+      parseKeyPair(value.JWT_PRIVATE_KEY_B64, value.JWT_PUBLIC_KEY_B64)
+    } catch (error) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['JWT_PRIVATE_KEY_B64'],
+        message: `par de claves inválido: ${(error as Error).message}`,
+      })
+    }
   })
 
 export const ENV_KEYS = [
@@ -61,6 +78,12 @@ export const ENV_KEYS = [
   'TRUSTED_ORIGINS',
   'SESSION_TTL_SECONDS',
   'SESSION_UPDATE_AGE_SECONDS',
+  'ACCESS_TOKEN_TTL_SECONDS',
+  'JWT_ISSUER',
+  'JWT_AUDIENCE',
+  'JWT_KID',
+  'JWT_PRIVATE_KEY_B64',
+  'JWT_PUBLIC_KEY_B64',
 ] as const
 
 export interface Config {
@@ -74,6 +97,12 @@ export interface Config {
   trustedOrigins: string[]
   sessionTtlSeconds: number
   sessionUpdateAgeSeconds: number
+  accessTokenTtlSeconds: number
+  jwtIssuer: string
+  jwtAudience: string
+  jwtKid: string
+  jwtPrivateKeyB64: string
+  jwtPublicKeyB64: string
 }
 
 const FORBIDDEN_KEYS = ['DATABASE_URL_MIGRATOR', 'POSTGRES_SUPERUSER_PASSWORD']
@@ -109,5 +138,11 @@ export function parseConfig(source: NodeJS.ProcessEnv): Config {
       .filter(Boolean),
     sessionTtlSeconds: env.SESSION_TTL_SECONDS,
     sessionUpdateAgeSeconds: env.SESSION_UPDATE_AGE_SECONDS,
+    accessTokenTtlSeconds: env.ACCESS_TOKEN_TTL_SECONDS,
+    jwtIssuer: env.JWT_ISSUER,
+    jwtAudience: env.JWT_AUDIENCE,
+    jwtKid: env.JWT_KID,
+    jwtPrivateKeyB64: env.JWT_PRIVATE_KEY_B64,
+    jwtPublicKeyB64: env.JWT_PUBLIC_KEY_B64,
   }
 }

@@ -1,10 +1,15 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
 import type { Config } from './config/schema.js'
+import { createTokenService } from './auth/access-token.js'
+import { createThrottle } from './auth/throttle.js'
+import { createAudit } from './audit/write.js'
 import { createContextFactory, type Deps } from './trpc/context.js'
 import { appRouter } from './trpc/router.js'
 
-export interface AppDeps extends Deps {
+export interface AppDeps {
+  auth: Deps['auth']
+  pools: Deps['pools']
   config: Config
 }
 
@@ -67,11 +72,19 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     }
   })
 
+  const services: Deps = {
+    auth: deps.auth,
+    pools: deps.pools,
+    tokens: createTokenService(deps.config),
+    throttle: createThrottle(deps.pools.auth),
+    audit: createAudit(deps.pools.auth, app.log),
+  }
+
   app.register(fastifyTRPCPlugin, {
     prefix: '/trpc',
     trpcOptions: {
       router: appRouter,
-      createContext: createContextFactory(deps),
+      createContext: createContextFactory(services),
     },
   })
 
