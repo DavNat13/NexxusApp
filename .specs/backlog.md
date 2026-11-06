@@ -38,6 +38,10 @@
   solo renueva la expiración; ver ADR 0002.
 - Lista de revocación de access tokens para expulsar una cuenta antes de los 15
   minutos, si el producto lo exige.
+- Tests de frontend con Jest y Testing Library: formularios, guardas de ruta y
+  refresco ante `401`.
+- Renovación proactiva del access token antes de que caduque, en lugar de
+  esperar al `401`, si la latencia del primer reintento molesta.
 - Exportación completa de datos en formato abierto.
 - Modo entrenador: un usuario sigue a otro.
 - Integración con wearables más allá de Health Connect.

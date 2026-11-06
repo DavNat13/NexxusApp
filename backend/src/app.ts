@@ -1,4 +1,5 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
+import cors from '@fastify/cors'
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
 import type { Config } from './config/schema.js'
 import { createTokenService } from './auth/access-token.js'
@@ -43,6 +44,18 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     trustProxy: true,
     bodyLimit: 32 * 1024,
     requestIdHeader: 'x-request-id',
+  })
+
+  // Expo web llama desde otro puerto: sin CORS el navegador bloquea la cookie.
+  // Solo se reflejan los orígenes de la lista blanca.
+  app.register(cors, {
+    origin(origin, callback) {
+      callback(null, !origin || deps.config.trustedOrigins.includes(origin))
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['content-type', 'authorization', 'x-request-id'],
+    maxAge: 600,
   })
 
   app.addHook('onRequest', async (req, reply) => {

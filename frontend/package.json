@@ -1,0 +1,36 @@
+{
+  "name": "@nexxus/frontend",
+  "version": "0.0.0",
+  "main": "expo-router/entry",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~58.0.17",
+    "@hookform/resolvers": "^7.0.3",
+    "@nexxus/shared": "workspace:*",
+    "@tanstack/react-query": "^5.106.1",
+    "@trpc/client": "^11.24.0",
+    "@trpc/react-query": "^11.24.0",
+    "expo": "~58.0.23",
+    "expo-constants": "~58.0.15",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-hook-form": "^7.91.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  }
+}

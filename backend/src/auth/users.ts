@@ -1,10 +1,7 @@
 import type postgres from 'postgres'
+import type { AuthUser } from '@nexxus/shared'
 
-export interface PublicUser {
-  id: string
-  email: string
-  name: string
-}
+export type PublicUser = AuthUser
 
 /** Lee el usuario por id. Solo se llama con un id ya verificado. */
 export async function findUser(

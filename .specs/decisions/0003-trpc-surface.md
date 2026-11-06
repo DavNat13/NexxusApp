@@ -30,7 +30,18 @@ protocolos. El cliente es una sola app Expo; no hay terceros consumiendo la API.
   nuevos de Better Auth al actualizar.
 - OAuth, verificación de email o passkeys exigirán procedimientos propios y un
   ADR si cambian el modelo.
-- Un cliente que no sea navegador ni app nativa necesitará política CORS
-  explícita; hoy no existe y no hace falta.
 - El límite de tasa por IP y por cuenta, y la escritura de auditoría, se añaden
   en la etapa 2C sobre estos mismos procedimientos.
+
+## Revisión 2026-11-06 (etapa 3)
+
+Expo web llama desde otro puerto, así que el navegador exige CORS. Se añade
+`@fastify/cors` con estas reglas:
+
+- Solo se refleja un origen de `TRUSTED_ORIGINS`. Sin origen (app nativa) se
+  acepta, igual que en el hook de mutaciones.
+- `credentials: true`, porque la cookie de sesión viaja en la petición.
+- Métodos `GET`, `POST` y `OPTIONS`; cabeceras `content-type`, `authorization` y
+  `x-request-id`. Sin comodines.
+- Un origen desconocido no recibe cabeceras CORS y el navegador bloquea la
+  respuesta. El hook `onRequest` sigue devolviendo 403 en la petición real.

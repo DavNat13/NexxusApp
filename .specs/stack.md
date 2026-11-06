@@ -36,7 +36,8 @@
 - Expo Router para navegación por archivos y deep links.
 - TypeScript strict, sin excepciones ni `any` sin justificación escrita.
 - Sin llamadas a LLM desde el cliente: todo pasa por el backend.
-- Tokens de sesión en `expo-secure-store`, nunca en AsyncStorage.
+- El access token JWT vive solo en memoria. El refresh es la cookie `httpOnly` que gestiona el almacén nativo; ningún token se guarda en AsyncStorage.
+- Cliente tRPC tipado con `@trpc/react-query`; validación de formularios con los esquemas Zod de `@nexxus/shared`.
 
 ## Datos
 

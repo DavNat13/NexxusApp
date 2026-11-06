@@ -29,8 +29,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.ts'],
-    languageOptions: { ecmaVersion: 2023, sourceType: 'module' },
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'module',
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
     rules: {
       'no-undef': 'off',
       'max-lines': ['error', { max: 150 }],

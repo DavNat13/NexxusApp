@@ -1,24 +1,19 @@
-import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
+import type { AuthPayload, AuthUser } from '@nexxus/shared'
 import type { Context } from '../context.js'
 import { findSessionId } from '../../auth/sessions.js'
 import { sha256 } from '../../auth/hash.js'
 
-const email = z.string().trim().toLowerCase().min(3).max(254).pipe(z.email())
-const password = z.string().min(12).max(128)
-const newName = z.string().trim().min(2).max(80)
+export { loginInput, registerInput } from '@nexxus/shared'
 
-export const registerInput = z.object({ name: newName, email, password })
-export const loginInput = z.object({ email, password: z.string().min(1).max(128) })
-
-function publicUser(user: { id: string; email: string; name: string }) {
+function publicUser(user: AuthUser): AuthUser {
   return { id: user.id, email: user.email, name: user.name }
 }
 
 export function authPayload(
-  user: { id: string; email: string; name: string },
+  user: AuthUser,
   access: { token: string; expiresAt: number; tokenType: 'Bearer' },
-) {
+): AuthPayload {
   return {
     user: publicUser(user),
     accessToken: access.token,

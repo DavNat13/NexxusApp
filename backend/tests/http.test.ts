@@ -49,6 +49,37 @@ describe('superficie HTTP', () => {
     expect(res.statusCode).not.toBe(403)
   })
 
+  it('responde al preflight del origen permitido con credenciales', async () => {
+    const origin = config.trustedOrigins[0] ?? 'http://localhost:8081'
+
+    const res = await server.app.inject({
+      method: 'OPTIONS',
+      url: '/trpc/auth.login',
+      headers: {
+        origin,
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type',
+      },
+    })
+
+    expect(res.statusCode).toBe(204)
+    expect(res.headers['access-control-allow-origin']).toBe(origin)
+    expect(res.headers['access-control-allow-credentials']).toBe('true')
+  })
+
+  it('no refleja un origen no permitido en el preflight', async () => {
+    const res = await server.app.inject({
+      method: 'OPTIONS',
+      url: '/trpc/auth.login',
+      headers: {
+        origin: 'https://malicioso.example',
+        'access-control-request-method': 'POST',
+      },
+    })
+
+    expect(res.headers['access-control-allow-origin']).toBeUndefined()
+  })
+
   it('responde 404 sin detalles en rutas desconocidas', async () => {
     const res = await server.app.inject({ method: 'GET', url: '/api/auth/session' })
     expect(res.statusCode).toBe(404)
