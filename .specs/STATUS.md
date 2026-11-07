@@ -2,9 +2,9 @@
 
 > Memoria de cada sesión. Se actualiza al terminar, no al empezar.
 
-**Última actualización:** 2026-11-06
-**Fase:** 3 — Frontend
-**Etapa actual:** etapa 3 cerrada; la etapa 4 (walking skeleton) es la siguiente
+**Última actualización:** 2026-11-07
+**Fase:** 3.5 — Cierre de auth
+**Etapa actual:** fase 1 (documentación y ADRs); siguiente: refresh nativo y sesión offline
 
 ## Hecho
 
@@ -47,12 +47,15 @@
 
 ## Siguiente paso
 
-Etapa 4 — **walking skeleton de entrenamiento**:
+Fase 2 — **refresh nativo y sesión offline**:
 
-1. Modelo de datos de ejercicios, rutinas y sesiones con RLS.
-2. Procedimientos tRPC de lectura y escritura con `withUser`.
-3. Primera pantalla que crea una sesión y la lista desde PostgreSQL.
-4. Base local con expo-sqlite y outbox solo si el flujo lo exige.
+1. Plugin `bearer` con `requireSignature` y cabecera `x-client-platform`.
+2. SecureStore en Android; cookie `httpOnly` en web.
+3. Controlador de refresco con `refreshed | rejected | offline` y época anti-logout.
+4. Guardas `checking | authenticated | anonymous` y usuario cacheado.
+5. Tests de frontend con Vitest.
+
+Después: registro cerrado, recuperación por correo y endurecimientos (fases 3–5), y finalmente paleta y rediseño (fase 6).
 
 ## Gate de la etapa 3 — cumplido
 
@@ -69,8 +72,8 @@ Etapa 4 — **walking skeleton de entrenamiento**:
 
 ```bash
 pnpm db:up              # levanta PostgreSQL en 5433
-pnpm db:bootstrap       # crea o actualiza los roles y sus límites
-pnpm db:migrate         # aplica migraciones pendientes
+pnpm -C database db:bootstrap  # crea o actualiza los roles y sus límites
+pnpm -C database db:migrate    # aplica migraciones pendientes
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -81,7 +84,7 @@ pnpm -C frontend start  # Expo; el emulador Android usa 10.0.2.2
 pnpm db:reset           # borra el volumen y reconstruye
 ```
 
-Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
+Tras `db:reset` hay que ejecutar `pnpm -C database db:bootstrap` y `pnpm -C database db:migrate`.
 
 ## Comportamiento del esquema
 
@@ -100,6 +103,11 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
   Better Auth no rota el valor del refresh, solo su expiración.
 - `0003-trpc-surface.md` — superficie tRPC, cookie `httpOnly` y allowlist de
   origen. Revisado en 3: CORS con credenciales solo para orígenes de confianza.
+- `0004-refresh-en-nativo.md` — SecureStore en Android, cookie en web, plugin
+  bearer y política offline.
+- `0005-correo-y-recuperacion.md` — Gmail SMTP, plugin `emailOTP`, código de 6
+  dígitos y revocación de sesiones.
+- `0006-registro-cerrado.md` — lista de correos, mensajes genéricos y rate limit.
 
 ## Bloqueado
 
@@ -108,7 +116,8 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
 ## Notas abiertas
 
 - Nombre de marca pendiente. `NexxusApp` es carpeta y `applicationId` provisional.
-- `applicationId` definitivo debe verificarse antes del primer upload a Play Store.
+- `applicationId` definitivo debe verificarse antes del primer upload a Play Store,
+  si algún día se publica; la distribución actual es APK sideloaded.
 - Repo legacy IronHealth sin commitear: pendiente tag `legacy/ironhealth-v1`.
 - `@better-auth/cli` 1.4.21 frente a `better-auth` 1.7.17: alinear cuando se
   regenere el esquema.
@@ -119,12 +128,21 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
   Hoy solo hay un `kid` activo por proceso.
 - Better Auth escribe "User not found" en stderr en desarrollo; sin email ni
   contraseña.
-- El frontend aún no tiene tests automatizados; el gate de la etapa 3 se apoya en
-  typecheck, lint y el bundle de Metro. Añadir Testing Library en el backlog.
+- El frontend añade Vitest en la fase 2 para la lógica de refresco y guardas; no
+  se añaden tests de componentes en esta ronda.
 - `EXPO_PUBLIC_API_URL` permite apuntar a otra API. En el emulador Android el
-  valor por defecto es `http://10.0.2.2:3000`.
+  valor por defecto es `http://10.0.2.2:3000`; en release debe ser obligatoria y
+  el fallback local no puede sobrevivir al build.
 - La app web de desarrollo corre en `http://localhost:8081`; debe estar en
   `TRUSTED_ORIGINS` o el navegador no recibe la cookie.
+- El refresh nativo vive en `expo-secure-store` y el contexto de la API ignora
+  cookies cuando llega `x-client-platform: native`.
+- El correo usa Gmail SMTP en Fly.io; Railway Hobby no permite SMTP. La cuenta
+  dedicada necesita 2FA y contraseña de aplicación.
+- El registro está cerrado con `ALLOWED_EMAILS`; añadir un amigo exige redesplegar.
+- `android.allowBackup` debe quedar desactivado o SecureStore excluido del backup.
+- HIBP, cambio de contraseña autenticado y cierre de sesión en todos los
+  dispositivos quedan en backlog.
 
 ## Etapas
 
@@ -136,4 +154,6 @@ Tras `db:reset` hay que ejecutar `db:bootstrap` y `db:migrate`.
 | 2B | Backend: superficie autenticada | Cerrada |
 | 2C | Backend: JWT y endurecimiento | Cerrada |
 | 3 | Frontend: auth | **Cerrada** |
-| 4 | Walking skeleton | Siguiente |
+| 3.5 | Cierre de auth | **En curso** |
+| 4 | Identidad visual y rediseño de auth | Pendiente |
+| 5 | Walking skeleton | Pendiente |

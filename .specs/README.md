@@ -38,15 +38,15 @@ Objetivo del MVP: **poder registrar un entrenamiento completo sin señal y verlo
 
 | Módulo | Responsabilidad |
 |---|---|
-| Identidad | Registro, login, sesión, borrado de cuenta |
+| Identidad | Registro cerrado, login, sesión, recuperación de contraseña |
 | Perfil | Datos del atleta, equipamiento, lesiones, ajustes |
 | Sincronización | Outbox local, cursores, conflictos, idempotencia |
 
 ## Alcance del MVP (v0.1)
 
-Dentro: auth, perfil, catálogo, planes, logger offline, historial, estadísticas básicas, sync, ajustes y beta en Play Store.
+Dentro: auth, perfil, catálogo, planes, logger offline, historial, estadísticas básicas, sync, ajustes y APK propio entre amigos.
 
-Fuera: nutrición, pasos, rutas, IA, social, pagos, iOS, web y gamificación.
+Fuera: nutrición, pasos, rutas, IA, social, pagos, iOS, web y gamificación. El borrado de cuenta y la ficha de datos de Play Store quedan fuera mientras la distribución sea un APK sideloaded; si se publica en Play Store, se revisan.
 
 ## Cómo trabajamos
 
@@ -66,9 +66,11 @@ La documentación se cierra antes de escribir código. Después se avanza por et
 
 1. **Documentación** — `README.md`, `stack.md`, `golden-rules.md`.
 2. **Base de datos: solo autenticación** — tablas, roles, RLS, migraciones y tests de seguridad.
-3. **Backend: autenticación blindada** — registro, login, refresh, logout, rate limit, bloqueo por intentos y auditoría.
-4. **Frontend: autenticación** — pantallas, tokens en SecureStore y refresh automático.
-5. **Walking skeleton** — login → perfil → registrar serie → sync → historial.
+3. **Backend: autenticación blindada** — registro, login, refresh, logout, rate limit, bloqueo por intentos y auditoría (2A, 2B, 2C).
+4. **Frontend: autenticación** — pantallas, sesión en memoria y refresco ante `401` (etapa 3).
+5. **Cierre de auth** — refresh nativo en SecureStore, sesión offline, registro cerrado, recuperación por correo y endurecimientos (etapa 3.5).
+6. **Identidad visual** — paleta, tipografía, componentes y rediseño de auth (etapa 4).
+7. **Walking skeleton** — login → perfil → registrar serie → sync → historial (etapa 5).
 
 Cada etapa termina con: typecheck, lint y tests en verde, y `.specs/STATUS.md` actualizado. No se toca el frontend hasta que la base de datos y el backend de auth estén en verde.
 
@@ -83,9 +85,10 @@ Cada etapa termina con: typecheck, lint y tests en verde, y `.specs/STATUS.md` a
 | API | Fastify + tRPC + Zod |
 | DB servidor | PostgreSQL + Drizzle |
 | Auth | Better Auth, sesión verificada en backend |
+| Correo | Gmail SMTP + nodemailer |
 | Errores | Sentry |
 | CI | GitHub Actions |
-| Deploy | Fly.io o Railway |
+| Deploy | Fly.io |
 
 Sin Redis, sin RabbitMQ, sin Kubernetes.
 
@@ -106,10 +109,11 @@ NexxusApp/
 - La app nunca habla con la base de datos; solo con la API.
 - La sesión se verifica en cada request. El `user_id` sale del token, nunca del cliente.
 - RLS forzado con rol sin `BYPASSRLS`.
-- Tokens en SecureStore, nunca en AsyncStorage.
+- El access token vive solo en memoria. El refresh va en cookie `httpOnly` en web y en `expo-secure-store` en Android; nunca en AsyncStorage.
+- El registro está cerrado con lista de correos permitidos.
 - Validación Zod en todos los bordes.
 - Sin PIN en v0.1.
-- Exportación y borrado de cuenta desde el MVP.
+- Sin borrado de cuenta ni ficha de datos mientras la distribución sea un APK sideloaded.
 
 ## Roadmap
 
@@ -126,6 +130,6 @@ Estimaciones a 8 h/semana.
 
 ## Estado
 
-Fase 0: documentación. Sin código todavía.
+Fase 3.5: cierre de auth (refresh nativo, sesión offline, registro cerrado, recuperación y endurecimientos). Después, identidad visual y walking skeleton.
 
 La memoria de cada sesión vivirá en `.specs/STATUS.md`.

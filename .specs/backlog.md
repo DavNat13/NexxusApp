@@ -38,11 +38,18 @@
   solo renueva la expiración; ver ADR 0002.
 - Lista de revocación de access tokens para expulsar una cuenta antes de los 15
   minutos, si el producto lo exige.
-- Tests de frontend con Jest y Testing Library: formularios, guardas de ruta y
-  refresco ante `401`.
+- Tests de componentes con React Native Testing Library. En la etapa 3.5 solo se
+  prueban módulos puros con Vitest.
 - Renovación proactiva del access token antes de que caduque, en lugar de
   esperar al `401`, si la latencia del primer reintento molesta.
-- Exportación completa de datos en formato abierto.
+- Código de invitación de un solo uso para no redesplegar al añadir amigos
+  (ADR 0006).
+- Cambio de contraseña autenticado, con `revokeOtherSessions`, y pantalla de
+  ajustes.
+- "Cerrar sesión en todos los dispositivos" con `revokeSessions`.
+- Comprobación de contraseñas filtradas con Have I Been Pwned (k-anonimato o
+  plugin `haveIBeenPwned` de Better Auth).
+- Exportación de datos y borrado de cuenta si algún día se publica en Play Store.
 - Modo entrenador: un usuario sigue a otro.
 - Integración con wearables más allá de Health Connect.
 - Widget de escritorio con la sesión del día.

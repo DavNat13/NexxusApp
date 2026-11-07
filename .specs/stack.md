@@ -24,10 +24,11 @@
 | Validación | Zod | Yup, io-ts |
 | DB servidor | PostgreSQL + Drizzle | MySQL, Prisma |
 | Auth | **Better Auth** | Supabase Auth, auth propio |
+| Correo | Gmail SMTP + nodemailer | Resend, Brevo |
 | Errores | Sentry | Bugsnag |
 | Logs | Pino | Winston |
 | CI | GitHub Actions | GitLab CI |
-| Deploy API | Fly.io o Railway | AWS, Vercel |
+| Deploy API | Fly.io | Railway, AWS, Vercel |
 | Monorepo | pnpm workspaces + Turborepo | Nx, npm workspaces |
 
 ## Mobile
@@ -36,8 +37,9 @@
 - Expo Router para navegación por archivos y deep links.
 - TypeScript strict, sin excepciones ni `any` sin justificación escrita.
 - Sin llamadas a LLM desde el cliente: todo pasa por el backend.
-- El access token JWT vive solo en memoria. El refresh es la cookie `httpOnly` que gestiona el almacén nativo; ningún token se guarda en AsyncStorage.
+- El access token JWT vive solo en memoria. En web el refresh es una cookie `httpOnly`; en Android es un token firmado guardado en `expo-secure-store`. Ningún token se guarda en AsyncStorage.
 - Cliente tRPC tipado con `@trpc/react-query`; validación de formularios con los esquemas Zod de `@nexxus/shared`.
+- La app debe arrancar sin red con una sesión previa: las guardas usan `checking | authenticated | anonymous` y no redirigen a login por un fallo de red.
 
 ## Datos
 
@@ -55,6 +57,7 @@ Better Auth, self-hosted, con el adaptador de Drizzle sobre nuestro PostgreSQL.
 - Las tablas de auth (`user`, `session`, `account`, `verification`) viven en nuestra base de datos, no en un servicio externo.
 - Better Auth aporta hash de contraseñas, gestión de sesiones, verificación de email, recuperación y 2FA. No reimplementamos criptografía.
 - La API emite un JWT de acceso EdDSA de 15 min con `jose`; el refresh es la sesión opaca de Better Auth. La API verifica la identidad en cada request; el `user_id` sale del token, nunca del cliente.
+- El registro está cerrado con una lista de correos (`ALLOWED_EMAILS`). La recuperación usa el plugin `emailOTP` con código de 6 dígitos y Gmail SMTP.
 - Better Auth 1.7 no rota el valor del refresh token, solo renueva su expiración. La rotación real está en el backlog.
 - Dos roles de base de datos, con superficies separadas:
   - `auth_service`: solo tablas de auth. Lo usan registro, login, refresh y logout.
@@ -74,7 +77,8 @@ Better Auth, self-hosted, con el adaptador de Drizzle sobre nuestro PostgreSQL.
 - **Unitario y dominio:** Vitest.
 - **Integración backend:** Vitest contra PostgreSQL real vía `docker-compose`.
 - **Seguridad de datos:** tests SQL que se conectan como `app_user` y verifican RLS.
-- **Componentes:** React Native Testing Library.
+- **Lógica de frontend:** Vitest para módulos puros (refresco, estados de sesión, validaciones).
+- **Componentes:** React Native Testing Library (backlog; no en esta ronda).
 - **E2E (opcional en v0.1):** Maestro.
 
 ## CI
