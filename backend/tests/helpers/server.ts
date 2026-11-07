@@ -11,6 +11,10 @@ export interface TestServer {
   pools: Pools
 }
 
+export interface TestServerOptions {
+  allowedEmails?: string[]
+}
+
 export interface TrpcEnvelope<T> {
   result?: { data: T }
   error?: { message: string; code: number; data: { code: string; httpStatus: number } }
@@ -20,10 +24,21 @@ export function newEmail(): string {
   return `test-${randomUUID()}@example.com`
 }
 
-export async function createTestServer(): Promise<TestServer> {
+export async function createTestServer(
+  options: TestServerOptions = {},
+): Promise<TestServer> {
   const pools = createPools(config)
-  const auth = createAuth(drizzle({ client: pools.auth }), config)
-  const app = buildApp({ auth, pools, config })
+  const allowedEmails = options.allowedEmails
+    ? new Set(options.allowedEmails.map((email) => email.toLowerCase()))
+    : config.allowedEmails
+  const testConfig = {
+    ...config,
+    allowedEmails,
+    registrationOpen:
+      config.nodeEnv !== 'production' && allowedEmails.size === 0,
+  }
+  const auth = createAuth(drizzle({ client: pools.auth }), testConfig)
+  const app = buildApp({ auth, pools, config: testConfig })
   await app.ready()
   return { app, pools }
 }

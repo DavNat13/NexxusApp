@@ -4,7 +4,7 @@ import { publicProcedure, router } from '../trpc.js'
 import { toTRPCError } from '../errors.js'
 import { copySetCookie } from '../../http/cookies.js'
 import { sha256 } from '../../auth/hash.js'
-import { ACCOUNT_POLICY, IP_POLICY } from '../../auth/throttle.js'
+import { ACCOUNT_POLICY, IP_POLICY, REGISTER_IP_POLICY } from '../../auth/throttle.js'
 import {
   authPayload,
   internal,
@@ -13,6 +13,7 @@ import {
   loginKeys,
   refreshTokenFrom,
   registerInput,
+  registrationFailed,
 } from './auth-support.js'
 
 /**
@@ -22,6 +23,22 @@ import {
 export const passwordRouter = router({
   register: publicProcedure.input(registerInput).mutation(async ({ ctx, input }) => {
     const account = sha256(`account:${input.email}`)
+    const ipKey = sha256(`register-ip:${ctx.ip ?? 'desconocida'}`)
+    const status = await ctx.throttle.check([ipKey])
+
+    if (status.locked) {
+      await ctx.audit.attempt(ctx.meta, account, 'register', 'failure', 'locked')
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: `Demasiados intentos. Reintenta en ${status.retryAfterSeconds} s.`,
+      })
+    }
+
+    if (!ctx.registrationOpen && !ctx.allowedEmails.has(input.email)) {
+      await ctx.throttle.failure(ipKey, REGISTER_IP_POLICY)
+      await ctx.audit.attempt(ctx.meta, account, 'register', 'failure', 'not_allowed')
+      throw registrationFailed()
+    }
 
     try {
       const { headers, response } = await ctx.auth.api.signUpEmail({
@@ -36,6 +53,7 @@ export const passwordRouter = router({
       if (ctx.native && !refreshToken) throw internal('No se pudo abrir la sesión.')
 
       const access = await issueAccessToken(ctx, response.user.id, response.token)
+      await ctx.throttle.reset([ipKey])
       await ctx.audit.event(ctx.meta, response.user.id, 'register', 'success')
       if (!ctx.native) copySetCookie(ctx.reply, headers)
 
@@ -43,6 +61,7 @@ export const passwordRouter = router({
     } catch (error) {
       if (error instanceof TRPCError) throw error
       if (error instanceof APIError && error.statusCode < 500) {
+        await ctx.throttle.failure(ipKey, REGISTER_IP_POLICY)
         await ctx.audit.attempt(ctx.meta, account, 'register', 'failure', 'rejected')
       }
       throw toTRPCError(error, 'No se pudo crear la cuenta.')

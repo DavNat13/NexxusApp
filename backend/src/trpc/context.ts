@@ -22,6 +22,8 @@ export interface Deps {
   tokens: TokenService
   throttle: ThrottleStore
   audit: AuditWriter
+  allowedEmails: Set<string>
+  registrationOpen: boolean
 }
 
 export interface Context extends Deps {

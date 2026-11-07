@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-11-07
 **Fase:** 3.5 — Cierre de auth
-**Etapa actual:** fase 2 cerrada (refresh nativo y sesión offline); siguiente: registro cerrado
+**Etapa actual:** fase 3 cerrada (registro cerrado); siguiente: recuperación por correo
 
 ## Hecho
 
@@ -55,23 +55,33 @@
   - Arranque optimista con usuario cacheado; las guardas usan
     `checking | authenticated | anonymous` y no expulsan por falta de red.
   - Vitest en el frontend para el controlador y el estado de sesión.
+- **Fase 3.5 — fase 3: registro cerrado:**
+  - `ALLOWED_EMAILS` normalizada a minúsculas y validada con Zod; obligatoria en
+    producción y abierta en desarrollo/test cuando está vacía (con aviso).
+  - La comprobación ocurre antes de Better Auth. El error es el mismo que un
+    registro fallido: `BAD_REQUEST` con "No se pudo crear la cuenta."
+  - Rate limit por IP con clave `register-ip`, 10 fallos/15 min y bloqueo de
+    15 min; se reinicia al registrar con éxito.
+  - Auditoría `not_allowed`, `rejected` y `locked` con el hash del correo.
+  - `schema.ts` dividido en `base-schema.ts` y `registration-schema.ts` para no
+    superar 150 líneas.
 
 ## En curso
 
-- Nada. La fase 2 está cerrada.
+- Nada. La fase 3 está cerrada.
 
 ## Siguiente paso
 
-Fase 3 — **registro cerrado**:
+Fase 4 — **recuperación de contraseña por correo**:
 
-1. Lista `ALLOWED_EMAILS` normalizada y validada al arrancar.
-2. Comprobación en el servidor antes de Better Auth, con respuesta genérica.
-3. Rate limit por IP para frenar el escaneo de correos.
-4. Auditoría del motivo real sin filtrar el correo.
-5. Tests de permitido, no permitido, bloqueo y mensaje indistinguible.
+1. `nodemailer` con SMTP de Gmail, timeouts y envío no bloqueante.
+2. Plugin `emailOTP`: 6 dígitos, 15 min, 3 intentos, hash y rotación.
+3. Procedimientos `requestPasswordReset` y `resetPassword` con respuesta
+   genérica, rate limit y auditoría.
+4. Mailer falso en tests; plantilla sin PII.
+5. Pantallas de solicitud y reset en el frontend.
 
-Después: recuperación por correo (fase 4), endurecimientos (fase 5) y paleta y
-rediseño (fase 6).
+Después: endurecimientos (fase 5) y paleta y rediseño (fase 6).
 
 ## Gate de la etapa 3 — cumplido
 
@@ -91,7 +101,7 @@ rediseño (fase 6).
 | Typecheck de los 4 paquetes | `pnpm typecheck` | Verde |
 | Lint con límite de 150 líneas | `pnpm lint` | Verde |
 | Tests de base de datos (16) | `pnpm -C database test` | Verde |
-| Tests de backend (60) | `pnpm -C backend test` | Verde |
+| Tests de backend (66) | `pnpm -C backend test` | Verde |
 | Tests de frontend (12) | `pnpm -C frontend test` | Verde |
 | Bundle Android de Expo | `expo export --platform android` | Verde |
 
@@ -173,6 +183,10 @@ Tras `db:reset` hay que ejecutar `pnpm -C database db:bootstrap` y `pnpm -C data
   `app.json`: un backup no restaura valores cifrados sin su clave.
 - HIBP, cambio de contraseña autenticado y cierre de sesión en todos los
   dispositivos quedan en backlog.
+- `ALLOWED_EMAILS` vacía en desarrollo/test abre el registro; en producción el
+  arranque falla. El aviso se emite en `server.ts`, donde ya hay logger.
+- Las pruebas que bloquean una IP usan `x-forwarded-for` con una IP propia para
+  no contaminar a los demás archivos de test que corren en paralelo.
 
 ## Etapas
 

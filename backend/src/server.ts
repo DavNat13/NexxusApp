@@ -9,6 +9,10 @@ const pools = createPools(config)
 const auth = createAuth(drizzle({ client: pools.auth }), config)
 const app = buildApp({ auth, pools, config })
 
+if (config.registrationOpen) {
+  app.log.warn('ALLOWED_EMAILS vacía: registro abierto; no usar así en producción')
+}
+
 async function shutdown(signal: string): Promise<void> {
   app.log.info({ signal }, 'cerrando la API')
   await app.close()

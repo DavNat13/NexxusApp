@@ -91,6 +91,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     tokens: createTokenService(deps.config),
     throttle: createThrottle(deps.pools.auth),
     audit: createAudit(deps.pools.auth, app.log),
+    allowedEmails: deps.config.allowedEmails,
+    registrationOpen: deps.config.registrationOpen,
   }
 
   app.register(fastifyTRPCPlugin, {

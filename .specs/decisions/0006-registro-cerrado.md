@@ -18,12 +18,14 @@ fricción para un grupo pequeño; cerrar el registro es más barato y más segur
   cliente no decide nada.
 - El error es siempre el mismo que un registro fallido: no se revela si el
   correo existe, si no está permitido o si hubo un error interno.
-- Rate limit por IP (10 fallos/15 min, bloqueo 15 min) para frenar el escaneo de
-  correos. Se reinicia al registrar con éxito.
+- Rate limit por IP (10 fallos/15 min, bloqueo 15 min), con clave
+  `sha256('register-ip:' + ip)`, para frenar el escaneo de correos. Se reinicia
+  al registrar con éxito.
 - Los rechazos se auditan en `audit.auth_attempt` con el hash del correo y el
   motivo real (`not_allowed`, `locked`).
-- En producción `ALLOWED_EMAILS` no puede estar vacío. En desarrollo/test puede
-  estar vacío para facilitar pruebas, con aviso en el arranque.
+- En producción `ALLOWED_EMAILS` no puede estar vacío. En desarrollo/test, una
+  lista vacía desactiva la comprobación (registro abierto) y el arranque emite un
+  aviso; una lista con correos mal formados falla al arrancar.
 
 ## Alternativa descartada
 

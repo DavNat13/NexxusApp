@@ -20,6 +20,13 @@ export const IP_POLICY: ThrottlePolicy = {
   lockSeconds: 900,
 }
 
+/** 10 intentos de registro por IP en 15 minutos: frena el escaneo de correos. */
+export const REGISTER_IP_POLICY: ThrottlePolicy = {
+  limit: 10,
+  windowSeconds: 900,
+  lockSeconds: 900,
+}
+
 export interface LockStatus {
   locked: boolean
   retryAfterSeconds: number

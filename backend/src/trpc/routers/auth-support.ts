@@ -36,6 +36,11 @@ export function unauthorized(): TRPCError {
   return new TRPCError({ code: 'UNAUTHORIZED', message: 'Sesión no válida.' })
 }
 
+/** Mismo mensaje para correo existente, no permitido o fallo interno. */
+export function registrationFailed(): TRPCError {
+  return new TRPCError({ code: 'BAD_REQUEST', message: 'No se pudo crear la cuenta.' })
+}
+
 /** Cabeceras para presentar el refresh nativo como sesión de Better Auth. */
 export function bearerHeaders(token: string): Headers {
   return new Headers({ authorization: `Bearer ${token}` })
