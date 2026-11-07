@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth'
+import { bearer } from 'better-auth/plugins'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { account, session, user, verification } from '@nexxus/database/schema/auth'
@@ -34,6 +35,11 @@ export function createAuth(db: AuthDb, config: Config) {
       cookieCache: { enabled: false },
     },
     rateLimit: { enabled: false },
+    plugins: [
+      // El refresh nativo es el valor firmado de `set-auth-token`. Un token
+      // opaco crudo o un JWT de acceso no pueden hacerse pasar por sesión.
+      bearer({ requireSignature: true }),
+    ],
   })
 }
 

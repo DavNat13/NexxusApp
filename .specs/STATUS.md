@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-11-07
 **Fase:** 3.5 — Cierre de auth
-**Etapa actual:** fase 1 (documentación y ADRs); siguiente: refresh nativo y sesión offline
+**Etapa actual:** fase 2 cerrada (refresh nativo y sesión offline); siguiente: registro cerrado
 
 ## Hecho
 
@@ -40,22 +40,38 @@
   - Pantallas de login y registro con React Hook Form y los mensajes de Zod en
     español; cierre de sesión desde la pantalla de entrenamiento.
   - CORS con lista blanca y credenciales para que Expo web pueda usar la cookie.
+- **Fase 3.5 — fase 2: refresh nativo y sesión offline:**
+  - Plugin `bearer` con `requireSignature: true`: un token opaco crudo o un JWT
+    de acceso no se confunden con un refresh.
+  - Cabecera `x-client-platform: native`; el contexto ignora cookies en nativo y
+    no se emite `Set-Cookie`. Web conserva la cookie `httpOnly`.
+  - `register` y `login` devuelven `refreshToken` (valor firmado de
+    `set-auth-token`) solo en nativo. `refresh` y `logout` aceptan
+    `{ refreshToken? }` y validan con `Authorization: Bearer`.
+  - Cliente: `expo-secure-store` para el refresh en Android, no-op en web;
+    usuario cacheado en AsyncStorage sin tokens; `android.allowBackup: false`.
+  - Controlador de refresco puro con `refreshed | rejected | offline`, una sola
+    petición en vuelo y época que descarta resultados posteriores a un logout.
+  - Arranque optimista con usuario cacheado; las guardas usan
+    `checking | authenticated | anonymous` y no expulsan por falta de red.
+  - Vitest en el frontend para el controlador y el estado de sesión.
 
 ## En curso
 
-- Nada. La etapa 3 está cerrada.
+- Nada. La fase 2 está cerrada.
 
 ## Siguiente paso
 
-Fase 2 — **refresh nativo y sesión offline**:
+Fase 3 — **registro cerrado**:
 
-1. Plugin `bearer` con `requireSignature` y cabecera `x-client-platform`.
-2. SecureStore en Android; cookie `httpOnly` en web.
-3. Controlador de refresco con `refreshed | rejected | offline` y época anti-logout.
-4. Guardas `checking | authenticated | anonymous` y usuario cacheado.
-5. Tests de frontend con Vitest.
+1. Lista `ALLOWED_EMAILS` normalizada y validada al arrancar.
+2. Comprobación en el servidor antes de Better Auth, con respuesta genérica.
+3. Rate limit por IP para frenar el escaneo de correos.
+4. Auditoría del motivo real sin filtrar el correo.
+5. Tests de permitido, no permitido, bloqueo y mensaje indistinguible.
 
-Después: registro cerrado, recuperación por correo y endurecimientos (fases 3–5), y finalmente paleta y rediseño (fase 6).
+Después: recuperación por correo (fase 4), endurecimientos (fase 5) y paleta y
+rediseño (fase 6).
 
 ## Gate de la etapa 3 — cumplido
 
@@ -67,6 +83,17 @@ Después: registro cerrado, recuperación por correo y endurecimientos (fases 3�
 | Tests de backend (49) | `pnpm -C backend test` | Verde |
 | Bundle Android de Expo | `expo export --platform android` | Verde |
 | Privilegios reales | `pnpm -C backend verify` | Verde |
+
+## Gate de la fase 2 — cumplido
+
+| Comprobación | Comando | Estado |
+|---|---|---|
+| Typecheck de los 4 paquetes | `pnpm typecheck` | Verde |
+| Lint con límite de 150 líneas | `pnpm lint` | Verde |
+| Tests de base de datos (16) | `pnpm -C database test` | Verde |
+| Tests de backend (60) | `pnpm -C backend test` | Verde |
+| Tests de frontend (12) | `pnpm -C frontend test` | Verde |
+| Bundle Android de Expo | `expo export --platform android` | Verde |
 
 ## Comandos
 
@@ -140,7 +167,10 @@ Tras `db:reset` hay que ejecutar `pnpm -C database db:bootstrap` y `pnpm -C data
 - El correo usa Gmail SMTP en Fly.io; Railway Hobby no permite SMTP. La cuenta
   dedicada necesita 2FA y contraseña de aplicación.
 - El registro está cerrado con `ALLOWED_EMAILS`; añadir un amigo exige redesplegar.
-- `android.allowBackup` debe quedar desactivado o SecureStore excluido del backup.
+- El controlador de refresco es puro (`refresh-controller.ts`); el cliente tRPC y
+  SecureStore se conectan en `refresh-session.ts`. Así se prueba sin red.
+- `android.allowBackup` está desactivado y el plugin `expo-secure-store` está en
+  `app.json`: un backup no restaura valores cifrados sin su clave.
 - HIBP, cambio de contraseña autenticado y cierre de sesión en todos los
   dispositivos quedan en backlog.
 

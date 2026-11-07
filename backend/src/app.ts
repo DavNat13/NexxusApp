@@ -54,7 +54,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['content-type', 'authorization', 'x-request-id'],
+    allowedHeaders: ['content-type', 'authorization', 'x-request-id', 'x-client-platform'],
     maxAge: 600,
   })
 

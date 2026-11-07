@@ -35,8 +35,21 @@ export const loginInput = z.object({
   password: z.string().min(1, 'Escribe tu contraseña.').max(128),
 })
 
+/**
+ * En nativo el refresh viaja en el cuerpo, nunca en cookie.
+ * En web el campo se omite y la sesión sale de la cookie `httpOnly`.
+ */
+const refreshTokenInput = z.object({
+  refreshToken: z.string().min(1).max(1024).optional(),
+})
+
+export const refreshInput = refreshTokenInput.default({})
+export const logoutInput = refreshTokenInput.default({})
+
 export type RegisterInput = z.infer<typeof registerInput>
 export type LoginInput = z.infer<typeof loginInput>
+export type RefreshInput = z.infer<typeof refreshInput>
+export type LogoutInput = z.infer<typeof logoutInput>
 
 export interface AuthUser {
   id: string
@@ -49,4 +62,6 @@ export interface AuthPayload {
   accessToken: string
   expiresAt: number
   tokenType: 'Bearer'
+  /** Solo en nativo: valor firmado que se guarda en SecureStore. */
+  refreshToken?: string
 }
