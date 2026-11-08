@@ -1,12 +1,24 @@
+import { useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native'
-import { colors, spacing } from './theme'
+import { colors, radii, sizes, spacing, typography } from './theme'
+
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type ButtonSize = 'md' | 'lg'
 
 interface ButtonProps {
   label: string
   onPress: () => void
   loading?: boolean
   disabled?: boolean
-  variant?: 'primary' | 'ghost'
+  variant?: ButtonVariant
+  size?: ButtonSize
+}
+
+const spinnerColor: Record<ButtonVariant, string> = {
+  primary: colors.accentText,
+  secondary: colors.text,
+  ghost: colors.accent,
+  danger: colors.dangerText,
 }
 
 export function Button({
@@ -15,28 +27,33 @@ export function Button({
   loading = false,
   disabled = false,
   variant = 'primary',
+  size = 'lg',
 }: ButtonProps) {
+  const [hovered, setHovered] = useState(false)
   const blocked = disabled || loading
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: blocked, busy: loading }}
       onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       disabled={blocked}
       style={({ pressed }) => [
         styles.base,
-        variant === 'ghost' ? styles.ghost : styles.primary,
+        size === 'md' ? styles.md : styles.lg,
+        variantStyle[variant],
+        hovered && !blocked ? styles.hovered : null,
         pressed && !blocked ? styles.pressed : null,
         blocked ? styles.disabled : null,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'ghost' ? colors.accent : colors.accentText} />
+        <ActivityIndicator color={spinnerColor[variant]} />
       ) : (
-        <Text style={[styles.label, variant === 'ghost' ? styles.ghostLabel : null]}>
-          {label}
-        </Text>
+        <Text style={[styles.label, labelStyle[variant]]}>{label}</Text>
       )}
     </Pressable>
   )
@@ -45,15 +62,40 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
+  md: { minHeight: sizes.touch },
+  lg: { minHeight: sizes.control },
   primary: { backgroundColor: colors.accent },
-  ghost: { borderColor: colors.border, borderWidth: 1 },
-  pressed: { opacity: 0.85 },
-  disabled: { opacity: 0.5 },
-  label: { color: colors.accentText, fontSize: 16, fontWeight: '700' },
-  ghostLabel: { color: colors.text },
+  secondary: {
+    backgroundColor: colors.elevated,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  ghost: { backgroundColor: colors.transparent },
+  danger: { backgroundColor: colors.danger },
+  hovered: { opacity: 0.92 },
+  pressed: { opacity: 0.82 },
+  disabled: { opacity: 0.45 },
+  label: { ...typography.button },
+  primaryLabel: { color: colors.accentText },
+  secondaryLabel: { color: colors.text },
+  ghostLabel: { color: colors.accent },
+  dangerLabel: { color: colors.dangerText },
+})
+
+const variantStyle = StyleSheet.create({
+  primary: styles.primary,
+  secondary: styles.secondary,
+  ghost: styles.ghost,
+  danger: styles.danger,
+})
+
+const labelStyle = StyleSheet.create({
+  primary: styles.primaryLabel,
+  secondary: styles.secondaryLabel,
+  ghost: styles.ghostLabel,
+  danger: styles.dangerLabel,
 })

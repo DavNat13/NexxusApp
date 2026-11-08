@@ -12,3 +12,15 @@ export function errorMessage(error: unknown): string {
 
   return 'Algo salió mal. Inténtalo de nuevo.'
 }
+
+/** Un fallo de red no es un rechazo de credenciales: no se debe alarmar. */
+export function isOfflineError(error: unknown): boolean {
+  if (error instanceof TRPCClientError) {
+    if (error.cause instanceof TypeError) return true
+    return /failed to fetch|network request failed|networkerror/i.test(
+      error.message,
+    )
+  }
+
+  return error instanceof TypeError
+}
