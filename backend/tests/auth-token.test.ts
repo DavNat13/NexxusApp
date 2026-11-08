@@ -68,8 +68,10 @@ describe('access token en las peticiones', () => {
   })
 
   it('rechaza un token manipulado', async () => {
-    const last = accessToken.at(-1) === 'A' ? 'B' : 'A'
-    const res = await getProcedure(server.app, 'auth.me', bearer(accessToken.slice(0, -1) + last))
+    const [header, payload, signature] = accessToken.split('.')
+    const first = signature?.at(0) === 'A' ? 'B' : 'A'
+    const tampered = `${header}.${payload}.${first}${signature?.slice(1)}`
+    const res = await getProcedure(server.app, 'auth.me', bearer(tampered))
 
     expect(envelope(res).error?.data.code).toBe('UNAUTHORIZED')
   })

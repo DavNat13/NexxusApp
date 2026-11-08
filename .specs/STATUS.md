@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-11-07
 **Fase:** 3.5 — Cierre de auth
-**Etapa actual:** fase 3 cerrada (registro cerrado); siguiente: recuperación por correo
+**Etapa actual:** fase 4 cerrada (recuperación por correo); siguiente: endurecimientos
 
 ## Hecho
 
@@ -65,23 +65,40 @@
   - Auditoría `not_allowed`, `rejected` y `locked` con el hash del correo.
   - `schema.ts` dividido en `base-schema.ts` y `registration-schema.ts` para no
     superar 150 líneas.
+- **Fase 3.5 — fase 4: recuperación de contraseña por correo:**
+  - `nodemailer` con SMTP de Gmail, timeouts y envío en segundo plano; los
+    errores se registran con código SMTP, sin correo ni OTP. En desarrollo sin
+    SMTP la API arranca y el flujo responde igual sin enviar.
+  - `SMTP_HOST`, `SMTP_PORT` (465/587), `SMTP_USER`, `SMTP_PASS` y `MAIL_FROM`
+    en `Config`; obligatorios en producción, opcionales en desarrollo/test.
+  - Plugin `emailOTP`: 6 dígitos, 15 min, 3 intentos, hash en base de datos,
+    rotación al reenviar y `disableSignUp`.
+  - `requestPasswordReset` responde siempre `{ ok: true }`, con rate limit por
+    correo e IP y auditoría `password_reset_requested`.
+  - `resetPassword` valida el código con mensaje genérico, audita el motivo real,
+    revoca todas las sesiones y envía el aviso de cambio. Auditoría
+    `password_reset`.
+  - Pantallas `forgot-password` y `reset-password`, enlace desde login, reenvío
+    con espera de 60 s y limpieza de token/pista/caché tras el reset.
+  - Tests con mailer falso: correo existente/inexistente, fallo SMTP, reset
+    correcto, tres intentos, caducidad, rate limit y plantillas sin PII.
 
 ## En curso
 
-- Nada. La fase 3 está cerrada.
+- Nada. La fase 4 está cerrada.
 
 ## Siguiente paso
 
-Fase 4 — **recuperación de contraseña por correo**:
+Fase 5 — **endurecimientos**:
 
-1. `nodemailer` con SMTP de Gmail, timeouts y envío no bloqueante.
-2. Plugin `emailOTP`: 6 dígitos, 15 min, 3 intentos, hash y rotación.
-3. Procedimientos `requestPasswordReset` y `resetPassword` con respuesta
-   genérica, rate limit y auditoría.
-4. Mailer falso en tests; plantilla sin PII.
-5. Pantallas de solicitud y reset en el frontend.
+1. `trustProxy` acotado y test de cadena `X-Forwarded-For` manipulada.
+2. Tope absoluto de sesión (`SESSION_ABSOLUTE_MAX_SECONDS`, 90 días).
+3. Revisión de logs y redacciones que falten.
+4. Release Android: fallar sin `EXPO_PUBLIC_API_URL`, sin cleartext fuera de dev.
+5. HIBP, cambio de contraseña autenticado y cierre de sesiones remotas al
+   backlog; documentar la keystore del APK.
 
-Después: endurecimientos (fase 5) y paleta y rediseño (fase 6).
+Después: paleta y rediseño de auth (fase 6) y cierre (fase 7).
 
 ## Gate de la etapa 3 — cumplido
 
@@ -93,6 +110,17 @@ Después: endurecimientos (fase 5) y paleta y rediseño (fase 6).
 | Tests de backend (49) | `pnpm -C backend test` | Verde |
 | Bundle Android de Expo | `expo export --platform android` | Verde |
 | Privilegios reales | `pnpm -C backend verify` | Verde |
+
+## Gate de la fase 4 — cumplido
+
+| Comprobación | Comando | Estado |
+|---|---|---|
+| Typecheck de los 4 paquetes | `pnpm typecheck` | Verde |
+| Lint con límite de 150 líneas | `pnpm lint` | Verde |
+| Tests de base de datos (16) | `pnpm -C database test` | Verde |
+| Tests de backend (75) | `pnpm -C backend test` | Verde |
+| Tests de frontend (15) | `pnpm -C frontend test` | Verde |
+| Bundle Android de Expo | `expo export --platform android` | Verde |
 
 ## Gate de la fase 2 — cumplido
 
@@ -187,6 +215,15 @@ Tras `db:reset` hay que ejecutar `pnpm -C database db:bootstrap` y `pnpm -C data
   arranque falla. El aviso se emite en `server.ts`, donde ya hay logger.
 - Las pruebas que bloquean una IP usan `x-forwarded-for` con una IP propia para
   no contaminar a los demás archivos de test que corren en paralelo.
+- La recuperación envía el código en segundo plano: un fallo de SMTP se registra
+  con su código y la API responde igual. Sin `SMTP_*` en desarrollo no se envía
+  nada, pero el flujo no falla.
+- El envío real con Gmail queda pendiente de prueba manual: `.env` no tiene
+  credenciales SMTP y no se versionan. En producción el arranque exige las cinco
+  variables.
+- El OTP se guarda hasheado (`base64url` de SHA-256) y el valor en claro solo
+  existe en el correo; `getVerificationOTP` y `createVerificationOTP` no se
+  exponen en `/trpc`.
 
 ## Etapas
 

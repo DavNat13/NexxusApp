@@ -9,7 +9,10 @@ const pools = createPools(config)
 try {
   await verifyPrivileges(pools)
 
-  const auth = createAuth(drizzle({ client: pools.auth }), config)
+  const auth = createAuth(drizzle({ client: pools.auth }), config, {
+    mailer: null,
+    log: { warn: () => {} },
+  })
   const session = await auth.api.getSession({
     headers: new Headers({ authorization: 'Bearer invalid' }),
   })

@@ -35,6 +35,19 @@ export const loginInput = z.object({
   password: z.string().min(1, 'Escribe tu contraseña.').max(128),
 })
 
+export const otpCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, 'El código debe tener 6 dígitos.')
+
+export const requestPasswordResetInput = z.object({ email: emailSchema })
+
+export const resetPasswordInput = z.object({
+  email: emailSchema,
+  code: otpCodeSchema,
+  password: passwordSchema,
+})
+
 /**
  * En nativo el refresh viaja en el cuerpo, nunca en cookie.
  * En web el campo se omite y la sesión sale de la cookie `httpOnly`.
@@ -48,8 +61,14 @@ export const logoutInput = refreshTokenInput.default({})
 
 export type RegisterInput = z.infer<typeof registerInput>
 export type LoginInput = z.infer<typeof loginInput>
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetInput>
+export type ResetPasswordInput = z.infer<typeof resetPasswordInput>
 export type RefreshInput = z.infer<typeof refreshInput>
 export type LogoutInput = z.infer<typeof logoutInput>
+
+export interface PasswordResetResult {
+  ok: true
+}
 
 export interface AuthUser {
   id: string

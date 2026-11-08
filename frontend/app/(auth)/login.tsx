@@ -70,7 +70,10 @@ export default function LoginScreen() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button label="Entrar" onPress={onSubmit} loading={busy} />
-      <Link href="/register" style={styles.link}>
+      <Link href="/forgot-password" style={styles.link}>
+        ¿Olvidaste tu contraseña?
+      </Link>
+      <Link href="/register" style={styles.secondary}>
         ¿No tienes cuenta? Crear una
       </Link>
     </Screen>
@@ -80,4 +83,5 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
   link: { color: colors.accent, marginTop: spacing.lg, textAlign: 'center' },
+  secondary: { color: colors.muted, marginTop: spacing.md, textAlign: 'center' },
 })

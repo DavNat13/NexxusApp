@@ -1,5 +1,12 @@
 import { BASE_ENV_KEYS, baseEnvSchema, validateBaseEnv } from './base-schema.js'
 import {
+  MAIL_ENV_KEYS,
+  mailFields,
+  parseMailSettings,
+  validateMail,
+  type MailSettings,
+} from './mail-schema.js'
+import {
   REGISTRATION_ENV_KEYS,
   parseAllowedEmails,
   registrationFields,
@@ -8,12 +15,18 @@ import {
 
 const envSchema = baseEnvSchema
   .extend(registrationFields)
+  .extend(mailFields)
   .superRefine((value, ctx) => {
     validateBaseEnv(value, ctx)
     validateRegistration(value.ALLOWED_EMAILS, value.NODE_ENV, ctx)
+    validateMail(value, value.NODE_ENV, ctx)
   })
 
-export const ENV_KEYS = [...BASE_ENV_KEYS, ...REGISTRATION_ENV_KEYS] as const
+export const ENV_KEYS = [
+  ...BASE_ENV_KEYS,
+  ...REGISTRATION_ENV_KEYS,
+  ...MAIL_ENV_KEYS,
+] as const
 
 export interface Config {
   nodeEnv: 'development' | 'test' | 'production'
@@ -35,6 +48,8 @@ export interface Config {
   allowedEmails: Set<string>
   /** Sin lista en desarrollo/test el registro queda abierto. */
   registrationOpen: boolean
+  /** `null` en desarrollo/test sin SMTP: el flujo responde igual, sin enviar. */
+  mail: MailSettings | null
 }
 
 const FORBIDDEN_KEYS = ['DATABASE_URL_MIGRATOR', 'POSTGRES_SUPERUSER_PASSWORD']
@@ -79,5 +94,6 @@ export function parseConfig(source: NodeJS.ProcessEnv): Config {
     jwtPublicKeyB64: env.JWT_PUBLIC_KEY_B64,
     allowedEmails,
     registrationOpen: env.NODE_ENV !== 'production' && allowedEmails.size === 0,
+    mail: parseMailSettings(env),
   }
 }

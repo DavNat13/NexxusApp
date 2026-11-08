@@ -1,17 +1,21 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
 import cors from '@fastify/cors'
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
+import { drizzle } from 'drizzle-orm/postgres-js'
 import type { Config } from './config/schema.js'
+import { createAuth } from './auth/better-auth.js'
 import { createTokenService } from './auth/access-token.js'
 import { createThrottle } from './auth/throttle.js'
 import { createAudit } from './audit/write.js'
+import { createMailer, type Mailer } from './mail/mailer.js'
 import { createContextFactory, type Deps } from './trpc/context.js'
 import { appRouter } from './trpc/router.js'
 
 export interface AppDeps {
-  auth: Deps['auth']
   pools: Deps['pools']
   config: Config
+  /** Los tests inyectan un mailer falso; `undefined` construye el real. */
+  mailer?: Mailer | null
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -34,9 +38,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
           'req.headers.cookie',
           'req.headers.authorization',
           'res.headers["set-cookie"]',
+          'res.headers["set-auth-token"]',
           '*.password',
           '*.token',
           '*.secret',
+          '*.otp',
+          '*.code',
+          '*.refreshToken',
         ],
         censor: '[redactado]',
       },
@@ -44,6 +52,20 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     trustProxy: true,
     bodyLimit: 32 * 1024,
     requestIdHeader: 'x-request-id',
+  })
+
+  const mailer =
+    deps.mailer === undefined ? createMailer(deps.config.mail, app.log) : deps.mailer
+  if (!mailer && deps.config.nodeEnv !== 'test') {
+    app.log.warn('SMTP sin configurar: la recuperación no enviará correos')
+  }
+  app.addHook('onClose', async () => {
+    mailer?.close()
+  })
+
+  const auth = createAuth(drizzle({ client: deps.pools.auth }), deps.config, {
+    mailer,
+    log: app.log,
   })
 
   // Expo web llama desde otro puerto: sin CORS el navegador bloquea la cookie.
@@ -86,7 +108,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   })
 
   const services: Deps = {
-    auth: deps.auth,
+    auth,
     pools: deps.pools,
     tokens: createTokenService(deps.config),
     throttle: createThrottle(deps.pools.auth),

@@ -1,13 +1,10 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { buildApp } from './app.js'
-import { createAuth } from './auth/better-auth.js'
 import { config } from './config/env.js'
 import { createPools } from './db/pools.js'
 import { verifyPrivileges } from './db/verify.js'
 
 const pools = createPools(config)
-const auth = createAuth(drizzle({ client: pools.auth }), config)
-const app = buildApp({ auth, pools, config })
+const app = buildApp({ pools, config })
 
 if (config.registrationOpen) {
   app.log.warn('ALLOWED_EMAILS vacía: registro abierto; no usar así en producción')

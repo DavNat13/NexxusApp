@@ -1,4 +1,11 @@
-import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native'
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type KeyboardTypeOptions,
+  type TextInputProps,
+} from 'react-native'
 import { colors, spacing } from './theme'
 
 interface FieldProps {
@@ -11,7 +18,9 @@ interface FieldProps {
   secureTextEntry?: boolean
   keyboardType?: KeyboardTypeOptions
   autoCapitalize?: 'none' | 'sentences' | 'words'
-  autoComplete?: 'email' | 'password' | 'name' | 'new-password'
+  autoComplete?: TextInputProps['autoComplete']
+  textContentType?: TextInputProps['textContentType']
+  maxLength?: number
 }
 
 export function Field({
@@ -25,6 +34,8 @@ export function Field({
   keyboardType,
   autoCapitalize = 'none',
   autoComplete,
+  textContentType,
+  maxLength,
 }: FieldProps) {
   return (
     <View style={styles.wrapper}>
@@ -40,6 +51,8 @@ export function Field({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         autoComplete={autoComplete}
+        textContentType={textContentType}
+        maxLength={maxLength}
         autoCorrect={false}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}

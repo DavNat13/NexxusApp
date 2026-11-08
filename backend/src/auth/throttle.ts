@@ -27,6 +27,20 @@ export const REGISTER_IP_POLICY: ThrottlePolicy = {
   lockSeconds: 900,
 }
 
+/** 5 solicitudes de código por correo o IP en 15 minutos. */
+export const RESET_REQUEST_POLICY: ThrottlePolicy = {
+  limit: 5,
+  windowSeconds: 900,
+  lockSeconds: 900,
+}
+
+/** 10 intentos de código por correo o IP en 15 minutos (además de los 3 del OTP). */
+export const RESET_VERIFY_POLICY: ThrottlePolicy = {
+  limit: 10,
+  windowSeconds: 900,
+  lockSeconds: 900,
+}
+
 export interface LockStatus {
   locked: boolean
   retryAfterSeconds: number

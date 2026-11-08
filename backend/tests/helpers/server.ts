@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { drizzle } from 'drizzle-orm/postgres-js'
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify'
 import { buildApp } from '../../src/app.js'
-import { createAuth } from '../../src/auth/better-auth.js'
 import { config } from '../../src/config/env.js'
 import { createPools, type Pools } from '../../src/db/pools.js'
+import type { Mailer } from '../../src/mail/mailer.js'
 
 export interface TestServer {
   app: FastifyInstance
@@ -13,6 +12,7 @@ export interface TestServer {
 
 export interface TestServerOptions {
   allowedEmails?: string[]
+  mailer?: Mailer | null
 }
 
 export interface TrpcEnvelope<T> {
@@ -37,8 +37,7 @@ export async function createTestServer(
     registrationOpen:
       config.nodeEnv !== 'production' && allowedEmails.size === 0,
   }
-  const auth = createAuth(drizzle({ client: pools.auth }), testConfig)
-  const app = buildApp({ auth, pools, config: testConfig })
+  const app = buildApp({ pools, config: testConfig, mailer: options.mailer })
   await app.ready()
   return { app, pools }
 }

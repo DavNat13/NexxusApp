@@ -17,6 +17,8 @@ interface SessionValue extends SessionState {
   signIn: (input: LoginInput) => Promise<void>
   signUp: (input: RegisterInput) => Promise<void>
   signOut: () => Promise<void>
+  /** Limpia token, pista y caché sin llamar a la API (sesión ya revocada). */
+  clearLocalSession: () => Promise<void>
 }
 
 const SessionContext = createContext<SessionValue | null>(null)
@@ -84,13 +86,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await adopt(await register.mutateAsync(input))
   }
 
-  async function signOut(): Promise<void> {
+  async function clearLocalSession(): Promise<void> {
     invalidateRefresh()
-    const refreshToken = await readRefreshToken()
-
     setAccessToken(null)
-    await Promise.all([clearRefreshToken(), clearCachedUser()])
     setState({ status: 'anonymous', user: null })
+
+    try {
+      await Promise.all([clearRefreshToken(), clearCachedUser()])
+    } catch {
+      // La sesión remota ya está revocada; el almacenamiento se reintenta al arrancar.
+    }
+  }
+
+  async function signOut(): Promise<void> {
+    const refreshToken = await readRefreshToken()
+    await clearLocalSession()
 
     try {
       await logout.mutateAsync(isNative && refreshToken ? { refreshToken } : {})
@@ -107,6 +117,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
+        clearLocalSession,
       }}
     >
       {children}
