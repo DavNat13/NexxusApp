@@ -2,6 +2,7 @@ import { protectedProcedure, publicProcedure, router } from '../trpc.js'
 import { toTRPCError } from '../errors.js'
 import { copySetCookie } from '../../http/cookies.js'
 import { findUser } from '../../auth/users.js'
+import type { AuthSession, Context } from '../context.js'
 import {
   authPayload,
   bearerHeaders,
@@ -10,6 +11,22 @@ import {
   sessionFromRefreshToken,
   unauthorized,
 } from './auth-support.js'
+
+function exceededAbsolute(ctx: Context, session: AuthSession): boolean {
+  const created = session.session.createdAt
+  if (!created) return false
+
+  return Date.now() - new Date(created).getTime() > ctx.sessionAbsoluteMaxSeconds * 1000
+}
+
+async function revoke(ctx: Context, refreshToken?: string): Promise<void> {
+  const headers =
+    ctx.native && refreshToken ? bearerHeaders(refreshToken) : ctx.headers
+
+  await ctx.auth.api
+    .signOut({ headers, returnHeaders: true })
+    .catch(() => undefined)
+}
 
 /** Refresco, cierre de sesión y datos de la sesión actual. */
 export const sessionRouter = router({
@@ -63,6 +80,12 @@ export const sessionRouter = router({
     } else {
       if (!ctx.session) throw unauthorized()
       session = ctx.session
+    }
+
+    if (exceededAbsolute(ctx, session)) {
+      await revoke(ctx, input.refreshToken)
+      await ctx.audit.event(ctx.meta, session.user.id, 'refresh', 'failure', 'absolute_max')
+      throw unauthorized()
     }
 
     const access = await ctx.tokens.sign(session.user.id, session.session.id)

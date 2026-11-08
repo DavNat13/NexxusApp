@@ -71,6 +71,23 @@ Better Auth, self-hosted, con el adaptador de Drizzle sobre nuestro PostgreSQL.
 - Rate limit en los endpoints de auth; body limit global.
 - Logs estructurados con Pino, sin PII.
 - Errores de auth genéricos hacia el cliente; el detalle va al log.
+- Detrás de un proxy solo se confía en saltos de loopback o red privada
+  (`TRUST_PROXY_HOPS`, por defecto 1). Una petición directa desde Internet no
+  puede elegir su IP con `X-Forwarded-For`.
+
+## Despliegue y release
+
+- La API se despliega en Fly.io. El proceso recibe tráfico del proxy interno;
+  `TRUST_PROXY_HOPS` cuenta saltos de confianza y nunca se confía en la cadena
+  completa.
+- `SESSION_ABSOLUTE_MAX_SECONDS` (90 días) limita la vida total de una sesión
+  aunque se refresque. Al superarlo, el refresh revoca la sesión y devuelve 401.
+- El APK de release exige `EXPO_PUBLIC_API_URL` con `https://`; si falta o usa
+  HTTP, la app falla al arrancar con un mensaje claro. `usesCleartextTraffic`
+  queda desactivado con `expo-build-properties`; el HTTP local solo existe en
+  Expo Go/desarrollo.
+- La keystore de firma se guarda fuera del repo y se conserva. Sin la misma
+  keystore, una actualización obliga a desinstalar y perder los datos locales.
 
 ## Testing
 

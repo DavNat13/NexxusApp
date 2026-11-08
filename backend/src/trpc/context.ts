@@ -13,7 +13,7 @@ import { toWebHeaders } from '../http/web-headers.js'
 
 export interface AuthSession {
   user: { id: string; email: string; name: string }
-  session: { id: string; expiresAt: Date }
+  session: { id: string; expiresAt: Date; createdAt?: Date }
 }
 
 export interface Deps {
@@ -24,6 +24,7 @@ export interface Deps {
   audit: AuditWriter
   allowedEmails: Set<string>
   registrationOpen: boolean
+  sessionAbsoluteMaxSeconds: number
 }
 
 export interface Context extends Deps {

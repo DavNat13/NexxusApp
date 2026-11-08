@@ -36,6 +36,7 @@ export interface AuditAttemptRow {
   outcome: string
   reason: string | null
   request_id: string
+  ip_address: string | null
 }
 
 export function auditEvents(userId: string): Promise<AuditEventRow[]> {
@@ -52,7 +53,7 @@ export function auditAttempts(identifierHash: string): Promise<AuditAttemptRow[]
   return connection().begin(async (tx) => {
     await tx`SET LOCAL ROLE audit_reader`
     return tx<AuditAttemptRow[]>`
-      SELECT identifier_hash, event, outcome, reason, request_id
+      SELECT identifier_hash, event, outcome, reason, request_id, ip_address
       FROM audit.auth_attempt WHERE identifier_hash = ${identifierHash} ORDER BY id
     `
   }) as Promise<AuditAttemptRow[]>

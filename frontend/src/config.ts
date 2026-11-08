@@ -9,4 +9,17 @@ const localhost = Platform.select({
   default: 'http://localhost:3000',
 })
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? localhost
+const configured = process.env.EXPO_PUBLIC_API_URL
+
+// Una build de release no puede caer al host de desarrollo ni hablar HTTP.
+if (!__DEV__) {
+  if (!configured) {
+    throw new Error('EXPO_PUBLIC_API_URL es obligatoria en una build de release.')
+  }
+
+  if (!configured.startsWith('https://')) {
+    throw new Error('EXPO_PUBLIC_API_URL debe usar https en una build de release.')
+  }
+}
+
+export const API_URL = configured ?? localhost

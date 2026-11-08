@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-11-07
 **Fase:** 3.5 — Cierre de auth
-**Etapa actual:** fase 4 cerrada (recuperación por correo); siguiente: endurecimientos
+**Etapa actual:** fase 5 cerrada (endurecimientos); siguiente: identidad visual
 
 ## Hecho
 
@@ -82,23 +82,29 @@
     con espera de 60 s y limpieza de token/pista/caché tras el reset.
   - Tests con mailer falso: correo existente/inexistente, fallo SMTP, reset
     correcto, tres intentos, caducidad, rate limit y plantillas sin PII.
+- **Fase 3.5 — fase 5: endurecimientos:**
+  - `createProxyTrust` en `backend/src/http/proxy.ts`: solo confía en saltos de
+    loopback, RFC1918, CGNAT, ULA y link-local, y nunca en más saltos que
+    `TRUST_PROXY_HOPS`. Una petición directa desde Internet no puede elegir su
+    IP con `X-Forwarded-For`.
+  - `SESSION_ABSOLUTE_MAX_SECONDS` (90 días) validado contra el TTL; `refresh`
+    revoca y devuelve 401 cuando la sesión supera el tope, con auditoría
+    `absolute_max`.
+  - Redacción de logs ampliada a email, OTP, tokens y cookies; no se registran
+    cuerpos de petición.
+  - Release Android: `EXPO_PUBLIC_API_URL` obligatoria y HTTPS fuera de
+    `__DEV__`; `usesCleartextTraffic: false` con `expo-build-properties`.
+  - HIBP, cambio de contraseña autenticado y cierre remoto de sesiones en
+    backlog; keystore documentada.
 
 ## En curso
 
-- Nada. La fase 4 está cerrada.
+- Nada. La fase 5 está cerrada.
 
 ## Siguiente paso
 
-Fase 5 — **endurecimientos**:
-
-1. `trustProxy` acotado y test de cadena `X-Forwarded-For` manipulada.
-2. Tope absoluto de sesión (`SESSION_ABSOLUTE_MAX_SECONDS`, 90 días).
-3. Revisión de logs y redacciones que falten.
-4. Release Android: fallar sin `EXPO_PUBLIC_API_URL`, sin cleartext fuera de dev.
-5. HIBP, cambio de contraseña autenticado y cierre de sesiones remotas al
-   backlog; documentar la keystore del APK.
-
-Después: paleta y rediseño de auth (fase 6) y cierre (fase 7).
+Fase 6 — **identidad visual y rediseño de auth**: paleta, tokens, tipografía,
+componentes y todas las pantallas de auth. Después, cierre (fase 7).
 
 ## Gate de la etapa 3 — cumplido
 
@@ -110,6 +116,17 @@ Después: paleta y rediseño de auth (fase 6) y cierre (fase 7).
 | Tests de backend (49) | `pnpm -C backend test` | Verde |
 | Bundle Android de Expo | `expo export --platform android` | Verde |
 | Privilegios reales | `pnpm -C backend verify` | Verde |
+
+## Gate de la fase 5 — cumplido
+
+| Comprobación | Comando | Estado |
+|---|---|---|
+| Typecheck de los 4 paquetes | `pnpm typecheck` | Verde |
+| Lint con límite de 150 líneas | `pnpm lint` | Verde |
+| Tests de base de datos (16) | `pnpm -C database test` | Verde |
+| Tests de backend (80) | `pnpm -C backend test` | Verde |
+| Tests de frontend (15) | `pnpm -C frontend test` | Verde |
+| Bundle Android de Expo | `expo export --platform android` | Verde |
 
 ## Gate de la fase 4 — cumplido
 
@@ -209,6 +226,17 @@ Tras `db:reset` hay que ejecutar `pnpm -C database db:bootstrap` y `pnpm -C data
   SecureStore se conectan en `refresh-session.ts`. Así se prueba sin red.
 - `android.allowBackup` está desactivado y el plugin `expo-secure-store` está en
   `app.json`: un backup no restaura valores cifrados sin su clave.
+- `trustProxy` no acepta números en Fastify 5.12.8 (falla cerrado). Se usa una
+  función que solo confía en el par directo y en saltos de red privada, con
+  `TRUST_PROXY_HOPS` como límite. En Fly.io el socket llega por `fdaa::/16`.
+- `SESSION_ABSOLUTE_MAX_SECONDS` (90 días) se valida contra
+  `SESSION_TTL_SECONDS`; al superarlo, `refresh` revoca la sesión y audita
+  `absolute_max`.
+- Sin `EXPO_PUBLIC_API_URL` o con HTTP, el release falla al importar `config.ts`.
+  `expo-build-properties` desactiva `usesCleartextTraffic`; el HTTP local sigue
+  funcionando en Expo Go.
+- La keystore del APK se guarda fuera del repo (`.jks` + contraseñas). Sin ella,
+  cada actualización exige desinstalar y perder los datos locales.
 - HIBP, cambio de contraseña autenticado y cierre de sesión en todos los
   dispositivos quedan en backlog.
 - `ALLOWED_EMAILS` vacía en desarrollo/test abre el registro; en producción el

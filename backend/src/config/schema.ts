@@ -39,6 +39,8 @@ export interface Config {
   trustedOrigins: string[]
   sessionTtlSeconds: number
   sessionUpdateAgeSeconds: number
+  sessionAbsoluteMaxSeconds: number
+  trustProxyHops: number
   accessTokenTtlSeconds: number
   jwtIssuer: string
   jwtAudience: string
@@ -86,6 +88,8 @@ export function parseConfig(source: NodeJS.ProcessEnv): Config {
       .filter(Boolean),
     sessionTtlSeconds: env.SESSION_TTL_SECONDS,
     sessionUpdateAgeSeconds: env.SESSION_UPDATE_AGE_SECONDS,
+    sessionAbsoluteMaxSeconds: env.SESSION_ABSOLUTE_MAX_SECONDS,
+    trustProxyHops: env.TRUST_PROXY_HOPS,
     accessTokenTtlSeconds: env.ACCESS_TOKEN_TTL_SECONDS,
     jwtIssuer: env.JWT_ISSUER,
     jwtAudience: env.JWT_AUDIENCE,

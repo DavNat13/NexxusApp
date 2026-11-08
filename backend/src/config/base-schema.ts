@@ -13,6 +13,12 @@ export const baseEnvSchema = z.object({
   TRUSTED_ORIGINS: z.string().default(''),
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(1_209_600),
   SESSION_UPDATE_AGE_SECONDS: z.coerce.number().int().positive().default(86_400),
+  SESSION_ABSOLUTE_MAX_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(7_776_000),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3_600).default(900),
   JWT_ISSUER: z.string().min(1).default('nexxus'),
   JWT_AUDIENCE: z.string().min(1).default('nexxus-app'),
@@ -59,6 +65,14 @@ export function validateBaseEnv(value: BaseEnv, ctx: z.RefinementCtx): void {
     })
   }
 
+  if (value.SESSION_ABSOLUTE_MAX_SECONDS < value.SESSION_TTL_SECONDS) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SESSION_ABSOLUTE_MAX_SECONDS'],
+      message: 'no puede ser menor que SESSION_TTL_SECONDS',
+    })
+  }
+
   try {
     parseKeyPair(value.JWT_PRIVATE_KEY_B64, value.JWT_PUBLIC_KEY_B64)
   } catch (error) {
@@ -81,6 +95,8 @@ export const BASE_ENV_KEYS = [
   'TRUSTED_ORIGINS',
   'SESSION_TTL_SECONDS',
   'SESSION_UPDATE_AGE_SECONDS',
+  'SESSION_ABSOLUTE_MAX_SECONDS',
+  'TRUST_PROXY_HOPS',
   'ACCESS_TOKEN_TTL_SECONDS',
   'JWT_ISSUER',
   'JWT_AUDIENCE',

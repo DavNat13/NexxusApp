@@ -8,6 +8,8 @@ import { createTokenService } from './auth/access-token.js'
 import { createThrottle } from './auth/throttle.js'
 import { createAudit } from './audit/write.js'
 import { createMailer, type Mailer } from './mail/mailer.js'
+import { createProxyTrust } from './http/proxy.js'
+import { loggerOptions } from './http/logging.js'
 import { createContextFactory, type Deps } from './trpc/context.js'
 import { appRouter } from './trpc/router.js'
 
@@ -31,25 +33,11 @@ const SECURITY_HEADERS: Record<string, string> = {
  */
 export function buildApp(deps: AppDeps): FastifyInstance {
   const app = Fastify({
-    logger: {
-      level: deps.config.nodeEnv === 'test' ? 'warn' : 'info',
-      redact: {
-        paths: [
-          'req.headers.cookie',
-          'req.headers.authorization',
-          'res.headers["set-cookie"]',
-          'res.headers["set-auth-token"]',
-          '*.password',
-          '*.token',
-          '*.secret',
-          '*.otp',
-          '*.code',
-          '*.refreshToken',
-        ],
-        censor: '[redactado]',
-      },
-    },
-    trustProxy: true,
+    logger: loggerOptions(deps.config.nodeEnv),
+    trustProxy:
+      deps.config.trustProxyHops === 0
+        ? false
+        : createProxyTrust(deps.config.trustProxyHops),
     bodyLimit: 32 * 1024,
     requestIdHeader: 'x-request-id',
   })
@@ -115,6 +103,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     audit: createAudit(deps.pools.auth, app.log),
     allowedEmails: deps.config.allowedEmails,
     registrationOpen: deps.config.registrationOpen,
+    sessionAbsoluteMaxSeconds: deps.config.sessionAbsoluteMaxSeconds,
   }
 
   app.register(fastifyTRPCPlugin, {
